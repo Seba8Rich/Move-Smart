@@ -1,22 +1,16 @@
 package com.movesmart.demo.model
 
-
 import jakarta.persistence.*
 
 @Entity
-@Table(name = "buses")
 data class Bus(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,
+    val plateNumber: String,
+    val capacity: Int,
+    val route: String,
 
-    @Column(nullable = false, unique = true)
-    val plateNumber: String = "",
-
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organization_id", nullable = false)
-    val organization: Organization? = null,
-
-    @ManyToOne
-    @JoinColumn(name = "driver_id")
-    val driver: User? = null
+    val organization: Organization
 )

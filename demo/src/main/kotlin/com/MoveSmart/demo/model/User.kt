@@ -19,9 +19,11 @@ data class User(
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    val role: UserRole = UserRole.PASSENGER
+    var role: UserRole = UserRole.PASSENGER   // default role
 )
 
 enum class UserRole {
-    DRIVER, PASSENGER, ADMIN
+    PASSENGER,
+    DRIVER,
+    ADMIN
 }

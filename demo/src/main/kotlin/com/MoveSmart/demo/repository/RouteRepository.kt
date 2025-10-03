@@ -1,7 +1,7 @@
 package com.MoveSmart.demo.repository
 
-
-import com.movesmart.demo.model.User
+import com.movesmart.demo.model.Route
 import org.springframework.data.jpa.repository.JpaRepository
 
-interface UserRepository : JpaRepository<User, Long>
+interface RouteRepository: JpaRepository<Route, Long> {
+}

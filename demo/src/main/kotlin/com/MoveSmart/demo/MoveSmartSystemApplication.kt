@@ -1,4 +1,4 @@
-package com.moveSmart.demo
+package com.movesmart.demo
 
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
