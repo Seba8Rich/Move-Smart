@@ -11,7 +11,7 @@ data class PassengerTrip(
 
     @ManyToOne
     @JoinColumn(name = "passenger_id", nullable = false)
-    val passenger: User? = null,  // Must have role = PASSENGER
+    val passenger: User? = null,
 
     @ManyToOne
     @JoinColumn(name = "route_id", nullable = false)

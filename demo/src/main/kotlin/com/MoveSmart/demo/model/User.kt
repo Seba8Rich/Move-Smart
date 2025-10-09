@@ -6,24 +6,26 @@ import jakarta.persistence.*
 @Table(name = "users")
 data class User(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0,
+    val userId: Long = 0,
 
     @Column(nullable = false)
-    val name: String = "",
+    val userName: String = "",
+
+    @Column(unique = true, nullable = true)
+    val userEmail: String = "",
 
     @Column(unique = true, nullable = false)
-    val email: String = "",
+    val userPhoneNumber: String = "",
 
     @Column(nullable = false)
-    val password: String = "",
+    val userPassword: String = "",
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    var role: UserRole = UserRole.PASSENGER   // default role
+    var userRole: UserRole
 )
 
 enum class UserRole {
     PASSENGER,
-    DRIVER,
-    ADMIN
+    DRIVER
 }

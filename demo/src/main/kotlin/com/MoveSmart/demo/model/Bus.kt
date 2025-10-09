@@ -11,6 +11,5 @@ data class Bus(
     val route: String,
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "organization_id", nullable = false)
     val organization: Organization
 )

@@ -1,9 +1,30 @@
-package com.MoveSmart.demo.service
+package com.movesmart.demo.service
 
-import com.MoveSmart.demo.repository.RouteRepository
+import com.movesmart.demo.dto.RouteDTORequest
 import com.movesmart.demo.model.Route
+import com.movesmart.demo.repository.BusRepository
+import com.movesmart.demo.repository.RouteRepository
+import org.springframework.stereotype.Service
 
-class RouteService(private  val routeRepository: RouteRepository) {
 
-    fun createRoute(route: Route): Route = routeRepository.save(route)
+@Service
+class RouteService(
+    private val routeRepository: RouteRepository,
+    private val busRepository: BusRepository
+) {
+    fun createRoute(request: RouteDTORequest): Route {
+        val bus = busRepository.findById(request.busId)
+            .orElseThrow { IllegalArgumentException("Bus not found with ID ${request.busId}") }
+
+        val route = Route(
+            startStation = request.startStation,
+            endStation = request.endStation,
+            distanceKm = request.distanceKm,
+            bus = bus
+        )
+
+        return routeRepository.save(route)
+    }
+
+    fun getAllRoutes(): List<Route> = routeRepository.findAll()
 }

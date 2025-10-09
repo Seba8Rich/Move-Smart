@@ -17,13 +17,4 @@ class OrganizationController(
         return organizationService.createOrganization(org)
     }
 
-    @GetMapping
-    fun getAllOrganizations(): List<Organization> {
-        return organizationService.getAllOrganizations()
-    }
-
-    @GetMapping("/{id}")
-    fun getOrganizationById(@PathVariable id: Long): Organization {
-        return organizationService.getOrganizationById(id)
-    }
 }

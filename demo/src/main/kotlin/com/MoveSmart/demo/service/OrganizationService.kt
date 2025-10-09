@@ -12,13 +12,4 @@ class OrganizationService(
         return organizationRepository.save(org)
     }
 
-    fun getAllOrganizations(): List<Organization> {
-        return organizationRepository.findAll()
-    }
-
-    fun getOrganizationById(id: Long): Organization {
-        return organizationRepository.findById(id)
-            .orElseThrow { IllegalArgumentException("Organization not found with id: $id")
-            }
-        }
 }

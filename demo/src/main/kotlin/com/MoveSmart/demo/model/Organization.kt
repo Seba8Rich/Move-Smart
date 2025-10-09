@@ -5,11 +5,12 @@ import jakarta.persistence.*
 
 @Entity
 data class Organization(
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
     val id: Long = 0,
     val name: String,
     val address: String,
-    val contactNumber: String
+    val contactNumber: String,
+    val email:String
 )
 
 
