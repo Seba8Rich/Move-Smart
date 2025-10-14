@@ -3,8 +3,7 @@ package com.movesmart.demo.dto
 data class BusDTORequest(
     val plateNumber: String,
     val capacity: Int,
-    val route: String,
-    val organizationId: Long
+    val route: String
 )
 data class  BusDTOResponse(
 

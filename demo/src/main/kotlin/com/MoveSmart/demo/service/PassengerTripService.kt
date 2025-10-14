@@ -39,6 +39,24 @@ class PassengerTripService(
         return passengerTripRepository.save(trip)
     }
 
-    fun getPassengerTrips(): List<PassengerTrip> = passengerTripRepository.findAll()
+    fun getPassengerTrips(): List<PassengerTrip> {
+        val trips = passengerTripRepository.findAll()
+
+        trips.forEach { trip ->
+            trip.passenger?.let { it.userId }
+            trip.route?.let { it.id }
+            trip.bus?.let { it.id }
+        }
+        return trips
+    }
+    
+    fun getPassengerTripById(id: Long): PassengerTrip {
+        val trip = passengerTripRepository.findById(id)
+            .orElseThrow { IllegalArgumentException("Passenger trip not found with ID: $id") }
+        trip.passenger?.let { it.userId }
+        trip.route?.let { it.id }
+        trip.bus?.let { it.id }
+        return trip
+    }
 }
 

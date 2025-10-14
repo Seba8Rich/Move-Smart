@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/api/organizations")
+@RequestMapping("/api/organization")
 class OrganizationController(
     private val organizationService: OrganizationService
 ) {
