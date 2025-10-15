@@ -8,7 +8,6 @@ import jakarta.persistence.*
 data class Bus(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,
-
     val plateNumber: String,
     val capacity: Int,
     val route: String,

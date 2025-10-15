@@ -1,6 +1,7 @@
 package com.movesmart.demo.service
 
 import com.movesmart.demo.dto.PassengerTripDTORequest
+import com.movesmart.demo.dto.PassengerTripDTOResponse
 import com.movesmart.demo.repository.PassengerTripRepository
 import com.movesmart.demo.model.PassengerTrip
 import com.movesmart.demo.model.TripStatus
@@ -39,24 +40,41 @@ class PassengerTripService(
         return passengerTripRepository.save(trip)
     }
 
-    fun getPassengerTrips(): List<PassengerTrip> {
-        val trips = passengerTripRepository.findAll()
-
-        trips.forEach { trip ->
-            trip.passenger?.let { it.userId }
-            trip.route?.let { it.id }
-            trip.bus?.let { it.id }
-        }
-        return trips
-    }
+    fun getPassengerTrips(): List<PassengerTrip> = passengerTripRepository.findAll()
     
     fun getPassengerTripById(id: Long): PassengerTrip {
-        val trip = passengerTripRepository.findById(id)
+        return passengerTripRepository.findById(id)
             .orElseThrow { IllegalArgumentException("Passenger trip not found with ID: $id") }
-        trip.passenger?.let { it.userId }
-        trip.route?.let { it.id }
-        trip.bus?.let { it.id }
-        return trip
+    }
+
+    fun updatePassengerTrip(id: Long, request: PassengerTripDTORequest): PassengerTrip {
+        val existingTrip = passengerTripRepository.findById(id)
+            .orElseThrow { IllegalArgumentException("Passenger trip not found with ID: $id") }
+
+        val passenger = userRepository.findById(request.userId)
+            .orElseThrow { IllegalArgumentException("Passenger not found with ID: ${request.userId}") }
+
+        val route = routeRepository.findById(request.routeId)
+            .orElseThrow { IllegalArgumentException("Route not found with ID: ${request.routeId}") }
+
+        val bus = busRepository.findById(request.busId)
+            .orElseThrow { IllegalArgumentException("Bus not found with ID: ${request.busId}") }
+
+        val updatedTrip = existingTrip.copy(
+
+            tripStatus = TripStatus.valueOf(request.tripStatus.uppercase())
+        )
+
+        return passengerTripRepository.save(updatedTrip)
+    }
+    
+    fun deletePassengerTrip(id: Long): Boolean {
+        return if (passengerTripRepository.existsById(id)) {
+            passengerTripRepository.deleteById(id)
+            true
+        } else {
+            false
+        }
     }
 }
 

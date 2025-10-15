@@ -4,12 +4,7 @@ import com.movesmart.demo.dto.PassengerTripDTORequest
 import com.movesmart.demo.dto.PassengerTripDTOResponse
 import com.movesmart.demo.service.PassengerTripService
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/api/passengerTrips")
@@ -33,5 +28,20 @@ class PassengerTripController (
     fun getTripById(@PathVariable id: Long): ResponseEntity<PassengerTripDTOResponse> {
         val trip = passengerTripService.getPassengerTripById(id)
         return ResponseEntity.ok(PassengerTripDTOResponse.fromEntity(trip))
+    }
+
+    @PutMapping("/{id}")
+    fun updateTrip(@PathVariable id: Long, @RequestBody request: PassengerTripDTORequest): ResponseEntity<PassengerTripDTOResponse> {
+        val updatedTrip = passengerTripService.updatePassengerTrip(id, request)
+        return ResponseEntity.ok(PassengerTripDTOResponse.fromEntity(updatedTrip))
+    }
+    
+    @DeleteMapping("/{id}")
+    fun deleteTrip(@PathVariable id: Long): ResponseEntity<String> {
+        return if (passengerTripService.deletePassengerTrip(id)) {
+            ResponseEntity.ok("Passenger trip deleted successfully")
+        } else {
+            ResponseEntity.notFound().build()
+        }
     }
 }

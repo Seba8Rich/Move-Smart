@@ -24,6 +24,37 @@ class BusService(
         )
         return busRepository.save(bus)
     }
-    
+
     fun getAllBuses(): List<Bus> = busRepository.findAll()
+
+    fun updateBus(id: Long, busDTO: BusDTORequest): Bus {
+        val existingBus = busRepository.findById(id)
+            .orElseThrow { IllegalArgumentException("Bus not found with ID: $id") }
+
+        val organization = organizationRepository.findAll().firstOrNull()
+            ?: throw IllegalStateException("No organization found. Please create an organization first.")
+
+        val updatedBus = existingBus.copy(
+            plateNumber = busDTO.plateNumber,
+            capacity = busDTO.capacity,
+            route = busDTO.route,
+            organization = organization
+        )
+
+        return busRepository.save(updatedBus)
+    }
+
+    fun deleteBus(id: Long): Boolean {
+        return if (busRepository.existsById(id)) {
+            busRepository.deleteById(id)
+            true
+        } else {
+            false
+        }
+    }
+
+    fun getBusById(id: Long): Bus {
+        return busRepository.findById(id)
+            .orElseThrow { IllegalArgumentException("Bus not found with ID: $id") }
+    }
 }

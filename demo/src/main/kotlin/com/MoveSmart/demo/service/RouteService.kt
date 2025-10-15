@@ -27,4 +27,18 @@ class RouteService(
     }
 
     fun getAllRoutes(): List<Route> = routeRepository.findAll()
+    
+    fun getRouteById(id: Long): Route {
+        return routeRepository.findById(id)
+            .orElseThrow { IllegalArgumentException("Route not found with ID: $id") }
+    }
+
+    fun deleteRoute(id: Long): Boolean {
+        return if (routeRepository.existsById(id)) {
+            routeRepository.deleteById(id)
+            true
+        } else {
+            false
+        }
+    }
 }

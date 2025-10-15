@@ -4,11 +4,8 @@ package com.movesmart.demo.controller
 import com.movesmart.demo.dto.RouteDTORequest
 import com.movesmart.demo.model.Route
 import com.movesmart.demo.service.RouteService
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/api/routes")
@@ -20,6 +17,18 @@ class RouteController(
         routeService.createRoute(request)
 
     @GetMapping
-    fun getAllRoutes(): List<Route> =
-        routeService.getAllRoutes()
+    fun getAllRoutes(): List<Route> = routeService.getAllRoutes()
+    
+    @GetMapping("/{id}")
+    fun getRouteById(@PathVariable id: Long): Route = routeService.getRouteById(id)
+
+
+    @DeleteMapping("/{id}")
+    fun deleteRoute(@PathVariable id: Long): ResponseEntity<String> {
+        return if (routeService.deleteRoute(id)) {
+            ResponseEntity.ok("Route deleted successfully")
+        } else {
+            ResponseEntity.notFound().build()
+        }
+    }
 }
