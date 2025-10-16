@@ -3,16 +3,21 @@ package com.movesmart.demo.service
 
 import com.movesmart.demo.model.User
 import com.movesmart.demo.repository.UserRepository
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
 @Transactional
 class UserService(
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val passwordEncoder: PasswordEncoder
 ) {
 
-    fun createUser(user: User): User = userRepository.save(user)
+    fun createUser(user: User): User {
+        val encoded = user.copy(userPassword = passwordEncoder.encode(user.userPassword))
+        return userRepository.save(encoded)
+    }
     fun getAllUsers(): List<User> = userRepository.findAll()
     
     fun getUserById(id: Long): User {
@@ -27,7 +32,7 @@ class UserService(
         val updatedUser = existingUser.copy(
             userEmail = user.userEmail,
             userPhoneNumber = user.userPhoneNumber,
-            userPassword = user.userPassword
+            userPassword = passwordEncoder.encode(user.userPassword)
         )
         
         return userRepository.save(updatedUser)

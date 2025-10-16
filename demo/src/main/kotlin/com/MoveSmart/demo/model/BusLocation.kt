@@ -14,13 +14,14 @@ data class BusLocation(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "bus_id", nullable = false)
     @JsonIgnoreProperties("organization")
-    val bus: Bus? = null,
+    val bus: Bus,
 
     @Column(nullable = false)
-    val latitude: Double = 0.0,
+    val latitude: Double,
 
     @Column(nullable = false)
-    val longitude: Double = 0.0,
+    val longitude: Double,
 
-    val timestamp: LocalDateTime = LocalDateTime.now()
+    @Column(nullable = false)
+    val recordedAt: LocalDateTime = LocalDateTime.now()
 )
