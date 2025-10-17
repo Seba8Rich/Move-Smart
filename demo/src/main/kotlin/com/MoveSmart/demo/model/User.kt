@@ -26,6 +26,8 @@ data class User(
 )
 
 enum class UserRole {
+    USER,
+    ADMIN,
     PASSENGER,
     DRIVER
 }

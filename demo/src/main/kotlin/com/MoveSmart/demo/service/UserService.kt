@@ -46,4 +46,10 @@ class UserService(
             false
         }
     }
+    
+    fun findByEmailOrPhone(identifier: String): User {
+        return userRepository.findByUserEmail(identifier)
+            ?: userRepository.findByUserPhoneNumber(identifier)
+            ?: throw IllegalArgumentException("User not found with identifier: $identifier")
+    }
 }

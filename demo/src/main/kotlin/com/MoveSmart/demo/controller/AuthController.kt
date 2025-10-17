@@ -35,7 +35,10 @@ class AuthController(
             val authToken = UsernamePasswordAuthenticationToken(req.username, req.password)
             val auth = authenticationManager.authenticate(authToken)
             val principal = auth.name
-            val token = jwtService.generateToken(principal)
+            
+            val user = userService.findByEmailOrPhone(principal)
+            val token = jwtService.generateToken(principal, mapOf("role" to user.userRole.name))
+            
             ResponseEntity.ok(AuthResponse(token))
         } catch (ex: AuthenticationException) {
             ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(mapOf("message" to "Invalid credentials"))

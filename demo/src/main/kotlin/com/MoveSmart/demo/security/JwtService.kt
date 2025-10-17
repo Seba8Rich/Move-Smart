@@ -11,7 +11,7 @@ import javax.crypto.SecretKey
 
 @Service
 class JwtService(
-    @Value("\${security.jwt.secret:changeme}") private val secret: String,
+    @Value("\${security.jwt.secret:change}") private val secret: String,
     @Value("\${security.jwt.expirationMs:86400000}") private val expirationMs: Long
 ) {
     private val key: SecretKey by lazy { Keys.hmacShaKeyFor(secret.toByteArray()) }

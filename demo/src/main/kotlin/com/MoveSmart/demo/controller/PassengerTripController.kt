@@ -3,7 +3,9 @@ package com.movesmart.demo.controller
 import com.movesmart.demo.dto.PassengerTripDTORequest
 import com.movesmart.demo.dto.PassengerTripDTOResponse
 import com.movesmart.demo.service.PassengerTripService
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
 
 @RestController
@@ -14,7 +16,7 @@ class PassengerTripController (
     @PostMapping
     fun createTrip(@RequestBody request: PassengerTripDTORequest): ResponseEntity<PassengerTripDTOResponse> {
         val savedTrip = passengerTripService.createPassengerTrip(request)
-        return ResponseEntity.ok(PassengerTripDTOResponse.fromEntity(savedTrip))
+        return ResponseEntity.status(HttpStatus.CREATED).body(PassengerTripDTOResponse.fromEntity(savedTrip))
     }
 
     @GetMapping
@@ -37,6 +39,7 @@ class PassengerTripController (
     }
     
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     fun deleteTrip(@PathVariable id: Long): ResponseEntity<String> {
         return if (passengerTripService.deletePassengerTrip(id)) {
             ResponseEntity.ok("Passenger trip deleted successfully")
