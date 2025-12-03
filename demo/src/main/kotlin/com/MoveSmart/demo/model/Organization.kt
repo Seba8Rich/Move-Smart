@@ -1,6 +1,5 @@
 package com.movesmart.demo.model
 
-
 import jakarta.persistence.*
 
 @Entity
@@ -14,5 +13,3 @@ data class Organization(
     val contactNumber: String,
     val email: String
 )
-
-

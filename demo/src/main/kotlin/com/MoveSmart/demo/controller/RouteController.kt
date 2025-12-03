@@ -1,6 +1,5 @@
 package com.movesmart.demo.controller
 
-
 import com.movesmart.demo.dto.RouteDTORequest
 import com.movesmart.demo.model.Route
 import com.movesmart.demo.service.RouteService

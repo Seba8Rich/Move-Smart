@@ -1,7 +1,6 @@
 package com.movesmart.demo.service
 
 import com.movesmart.demo.model.Organization
-import com.movesmart.demo.model.User
 import com.movesmart.demo.repository.OrganizationRepository
 import org.springframework.stereotype.Service
 

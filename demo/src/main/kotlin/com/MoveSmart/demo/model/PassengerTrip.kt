@@ -43,8 +43,7 @@ data class PassengerTrip(
 ) {
     @PrePersist
     fun onCreate() {
-        val now = LocalDateTime.now()
-
+        // createdAt is set via default parameter in data class
     }
 
     @PreUpdate

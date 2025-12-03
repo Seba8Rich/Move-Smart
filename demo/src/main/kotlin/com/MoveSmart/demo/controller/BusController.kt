@@ -30,8 +30,15 @@ class BusController(
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    fun getBusById(@PathVariable id: Long): ResponseEntity<Bus> {
-        val bus = busService.getBusById(id)
+    fun getBusById(@PathVariable id: String): ResponseEntity<Bus> {
+        val bus = try {
+            // Try to parse as Long (ID)
+            val busId = id.toLong()
+            busService.getBusById(busId)
+        } catch (e: NumberFormatException) {
+            // If not a number, treat as plate number
+            busService.getBusByPlateNumber(id)
+        }
         return ResponseEntity.ok(bus)
     }
     

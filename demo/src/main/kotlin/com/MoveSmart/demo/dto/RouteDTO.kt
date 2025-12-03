@@ -6,7 +6,7 @@ data class RouteDTORequest(
     val distanceKm: Double,
     val busId: Long
 )
-data class RouteDTORespond(
+data class RouteDTOResponse(
     val id: Long,
     val startStation: String,
     val endStation: String,

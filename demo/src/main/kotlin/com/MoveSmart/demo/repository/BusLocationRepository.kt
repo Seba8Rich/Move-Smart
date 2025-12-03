@@ -6,3 +6,4 @@ import org.springframework.stereotype.Repository
 @Repository
 interface BusLocationRepository: JpaRepository<BusLocation, Long> {
 }
+

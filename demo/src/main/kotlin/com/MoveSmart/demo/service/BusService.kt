@@ -13,7 +13,7 @@ class BusService(
 ) {
     fun createBus(busDTO: BusDTORequest): Bus {
 
-        val organization = organizationRepository.findAll().firstOrNull()
+        val organization = organizationRepository.findFirstByOrderByIdAsc()
             ?: throw IllegalStateException("No organization found. Please create an organization first.")
         
         val bus = Bus(
@@ -31,7 +31,7 @@ class BusService(
         val existingBus = busRepository.findById(id)
             .orElseThrow { IllegalArgumentException("Bus not found with ID: $id") }
 
-        val organization = organizationRepository.findAll().firstOrNull()
+        val organization = organizationRepository.findFirstByOrderByIdAsc()
             ?: throw IllegalStateException("No organization found. Please create an organization first.")
 
         val updatedBus = existingBus.copy(
@@ -56,5 +56,10 @@ class BusService(
     fun getBusById(id: Long): Bus {
         return busRepository.findById(id)
             .orElseThrow { IllegalArgumentException("Bus not found with ID: $id") }
+    }
+
+    fun getBusByPlateNumber(plateNumber: String): Bus {
+        return busRepository.findByPlateNumber(plateNumber)
+            ?: throw IllegalArgumentException("Bus not found with plate number: $plateNumber")
     }
 }

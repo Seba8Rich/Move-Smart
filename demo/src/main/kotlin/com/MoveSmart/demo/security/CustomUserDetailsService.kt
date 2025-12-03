@@ -24,5 +24,3 @@ class CustomUserDetailsService(
         return User(entity.userEmail.ifBlank { entity.userPhoneNumber }, entity.userPassword, authorities)
     }
 }
-
-

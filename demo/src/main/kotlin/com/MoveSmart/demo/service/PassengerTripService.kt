@@ -28,13 +28,19 @@ class PassengerTripService(
         val bus = busRepository.findById(request.busId)
             .orElseThrow { IllegalArgumentException("Bus not found with ID: ${request.busId}") }
 
+        val tripStatus = try {
+            TripStatus.valueOf(request.tripStatus.uppercase())
+        } catch (e: IllegalArgumentException) {
+            throw IllegalArgumentException("Invalid trip status: ${request.tripStatus}. Valid values are: ${TripStatus.values().joinToString { it.name }}")
+        }
+
         val trip = PassengerTrip(
             passenger = passenger,
             route = route,
             bus = bus,
             startStation = request.startStation,
             endStation = request.endStation,
-            tripStatus = TripStatus.valueOf(request.tripStatus.uppercase())
+            tripStatus = tripStatus
         )
 
         return passengerTripRepository.save(trip)
@@ -60,9 +66,19 @@ class PassengerTripService(
         val bus = busRepository.findById(request.busId)
             .orElseThrow { IllegalArgumentException("Bus not found with ID: ${request.busId}") }
 
-        val updatedTrip = existingTrip.copy(
+        val tripStatus = try {
+            TripStatus.valueOf(request.tripStatus.uppercase())
+        } catch (e: IllegalArgumentException) {
+            throw IllegalArgumentException("Invalid trip status: ${request.tripStatus}. Valid values are: ${TripStatus.values().joinToString { it.name }}")
+        }
 
-            tripStatus = TripStatus.valueOf(request.tripStatus.uppercase())
+        val updatedTrip = existingTrip.copy(
+            passenger = passenger,
+            route = route,
+            bus = bus,
+            startStation = request.startStation,
+            endStation = request.endStation,
+            tripStatus = tripStatus
         )
 
         return passengerTripRepository.save(updatedTrip)
