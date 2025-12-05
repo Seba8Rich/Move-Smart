@@ -4,6 +4,7 @@ import com.movesmart.demo.model.User
 import com.movesmart.demo.model.UserRole
 import com.movesmart.demo.security.JwtService
 import com.movesmart.demo.service.UserService
+import com.movesmart.demo.service.BusService
 import org.springframework.http.ResponseEntity
 import org.springframework.http.HttpStatus
 import org.springframework.security.core.AuthenticationException
@@ -20,13 +21,21 @@ data class RegisterRequest(
     val userPassword: String,
     val userRole: String? = null // Optional - will be set by endpoint if not provided
 )
+data class RegisterDriverRequest(
+    val userName: String,
+    val userEmail: String,
+    val userPhoneNumber: String,
+    val userPassword: String,
+    val busPlateNumber: String // Required - bus plate number to assign to the driver
+)
 
 @RestController
 @RequestMapping("/api/auth")
 class AuthController(
     private val authenticationManager: AuthenticationManager,
     private val jwtService: JwtService,
-    private val userService: UserService
+    private val userService: UserService,
+    private val busService: BusService
 ) {
 
     /**
@@ -126,13 +135,87 @@ class AuthController(
     }
 
     /**
-     * Convenience endpoint for driver registration
+     * Convenience endpoint for driver registration with bus assignment
      * POST /api/auth/register/driver
+     * Body: { "userName": "...", "userEmail": "...", "userPhoneNumber": "...", "userPassword": "...", "busPlateNumber": "RAC223M" }
      */
     @PostMapping("/register/driver")
-    fun registerDriver(@RequestBody request: RegisterRequest): ResponseEntity<Any> {
-        val userWithRole = request.copy(userRole = "DRIVER")
-        return register(userWithRole)
+    fun registerDriver(@RequestBody request: RegisterDriverRequest): ResponseEntity<Any> {
+        return try {
+            // Validate required fields
+            val validationErrors = mutableListOf<String>()
+
+            if (request.userName.isBlank()) {
+                validationErrors.add("userName is required and cannot be empty")
+            }
+            if (request.userPhoneNumber.isBlank()) {
+                validationErrors.add("userPhoneNumber is required and cannot be empty")
+            }
+            if (request.userPassword.isBlank()) {
+                validationErrors.add("userPassword is required and cannot be empty")
+            }
+            if (request.userPassword.length < 6) {
+                validationErrors.add("userPassword must be at least 6 characters long")
+            }
+            if (request.busPlateNumber.isBlank()) {
+                validationErrors.add("busPlateNumber is required and cannot be empty")
+            }
+
+            if (validationErrors.isNotEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(mapOf(
+                        "error" to "Bad Request",
+                        "message" to "Validation failed: ${validationErrors.joinToString(", ")}",
+                        "errors" to validationErrors
+                    ))
+            }
+
+            // Check if bus exists and is available
+            val bus = try {
+                busService.getBusByPlateNumber(request.busPlateNumber.trim())
+            } catch (ex: IllegalArgumentException) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(mapOf("error" to "Bad Request", "message" to "Bus not found with plate number: ${request.busPlateNumber}"))
+            }
+
+            if (bus.driver != null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(mapOf(
+                        "error" to "Bad Request",
+                        "message" to "Bus with plate number ${request.busPlateNumber} is already assigned to driver: ${bus.driver?.userName}"
+                    ))
+            }
+
+            // Create the driver user
+            val user = User(
+                userName = request.userName.trim(),
+                userEmail = request.userEmail.trim().takeIf { it.isNotBlank() } ?: "",
+                userPhoneNumber = request.userPhoneNumber.trim(),
+                userPassword = request.userPassword,
+                userRole = UserRole.DRIVER
+            )
+
+            val savedDriver = userService.createUser(user)
+            
+            // Assign driver to bus by plate number
+            busService.updateBusWithDriverByPlateNumber(request.busPlateNumber.trim(), savedDriver)
+
+            val principal = savedDriver.userEmail.ifBlank { savedDriver.userPhoneNumber }
+            val token = jwtService.generateToken(principal, mapOf("role" to savedDriver.userRole.name))
+            
+            ResponseEntity.ok(AuthResponse(token))
+        } catch (ex: IllegalArgumentException) {
+            // Handle validation errors from UserService (e.g., email/phone already exists)
+            ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(mapOf("error" to "Bad Request", "message" to (ex.message ?: "Registration failed")))
+        } catch (ex: Exception) {
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(mapOf(
+                    "error" to "Internal Server Error",
+                    "message" to (ex.message ?: "An error occurred"),
+                    "exceptionType" to ex.javaClass.simpleName
+                ))
+        }
     }
 
     /**

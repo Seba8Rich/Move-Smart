@@ -2,6 +2,7 @@ package com.movesmart.demo.service
 
 
 import com.movesmart.demo.model.User
+import com.movesmart.demo.model.UserRole
 import com.movesmart.demo.repository.UserRepository
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
@@ -33,37 +34,70 @@ class UserService(
 
     fun getAllUsers(): List<User> = userRepository.findAll()
 
+    fun getUsersByRole(userRole: UserRole): List<User> {
+        return userRepository.findByUserRole(userRole)
+    }
+
     fun getUserById(id: Long): User {
         return userRepository.findById(id)
             .orElseThrow { IllegalArgumentException("User not found with ID: $id") }
     }
 
-    fun updateUser(id: Long, user: User): User {
+    fun updateUser(
+        id: Long,
+        userName: String? = null,
+        userEmail: String? = null,
+        userPhoneNumber: String? = null,
+        userPassword: String? = null,
+        userRole: String? = null
+    ): User {
         val existingUser = userRepository.findById(id)
             .orElseThrow { IllegalArgumentException("User not found with ID: $id") }
 
-
-        if (user.userEmail != existingUser.userEmail &&
-            userRepository.findByUserEmail(user.userEmail) != null
+        // Validate email uniqueness if email is being changed
+        val newEmail = userEmail?.trim()?.takeIf { it.isNotBlank() } ?: existingUser.userEmail
+        if (newEmail != existingUser.userEmail &&
+            userRepository.findByUserEmail(newEmail) != null
         ) {
             throw IllegalArgumentException("Email already registered by another user")
         }
 
+        // Validate phone number uniqueness if phone is being changed
+        val newPhoneNumber = userPhoneNumber?.trim() ?: existingUser.userPhoneNumber
+        if (newPhoneNumber != existingUser.userPhoneNumber &&
+            userRepository.findByUserPhoneNumber(newPhoneNumber) != null
+        ) {
+            throw IllegalArgumentException("Phone number already registered by another user")
+        }
 
-        val hashedPassword = if (user.userPassword.isNotBlank()) {
-            if (user.userPassword.startsWith("$2a$") || user.userPassword.startsWith("$2b$")) {
-                user.userPassword
+        // Handle password hashing
+        val hashedPassword = if (userPassword != null && userPassword.isNotBlank()) {
+            if (userPassword.startsWith("$2a$") || userPassword.startsWith("$2b$")) {
+                userPassword // Already hashed
             } else {
-                passwordEncoder.encode(user.userPassword)
+                passwordEncoder.encode(userPassword) // Hash the new password
             }
         } else {
-            existingUser.userPassword
+            existingUser.userPassword // Keep existing password
+        }
+
+        // Parse userRole if provided
+        val newUserRole = if (userRole != null && userRole.isNotBlank()) {
+            try {
+                UserRole.valueOf(userRole.uppercase())
+            } catch (e: IllegalArgumentException) {
+                throw IllegalArgumentException("Invalid user role: $userRole. Valid roles are: ${UserRole.values().joinToString { it.name }}")
+            }
+        } else {
+            existingUser.userRole
         }
 
         val updatedUser = existingUser.copy(
-            userEmail = user.userEmail,
-            userPhoneNumber = user.userPhoneNumber,
-            userPassword = hashedPassword
+            userName = userName?.trim()?.takeIf { it.isNotBlank() } ?: existingUser.userName,
+            userEmail = newEmail,
+            userPhoneNumber = newPhoneNumber,
+            userPassword = hashedPassword,
+            userRole = newUserRole
         )
 
         return userRepository.save(updatedUser)

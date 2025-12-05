@@ -23,6 +23,16 @@ class JwtAuthenticationFilter(
         response: HttpServletResponse,
         filterChain: FilterChain
     ) {
+        // Skip JWT processing for public endpoints
+        val path = request.requestURI
+        if (path.startsWith("/api/auth/") || 
+            path.startsWith("/error") || 
+            path.startsWith("/actuator/health") ||
+            path.startsWith("/api/google-maps/")) {
+            filterChain.doFilter(request, response)
+            return
+        }
+
         val authHeader = request.getHeader("Authorization")
         val token = if (authHeader != null && authHeader.startsWith("Bearer ")) {
             authHeader.substring(7)
@@ -58,11 +68,9 @@ class JwtAuthenticationFilter(
                 response.writer.write("{\"error\":\"Unauthorized\",\"message\":\"Invalid token. The token may have been generated with an old secret. Please login again to get a new token.\"}")
                 return
             } catch (e: org.springframework.security.core.userdetails.UsernameNotFoundException) {
-                // User not found
-                response.contentType = "application/json"
-                response.status = HttpServletResponse.SC_UNAUTHORIZED
-                response.writer.write("{\"error\":\"Unauthorized\",\"message\":\"User not found\"}")
-                return
+                // User not found - but if this is a public endpoint, allow it to continue
+                // The security chain will handle authorization
+                // For protected endpoints, this will be caught by Spring Security
             } catch (e: Exception) {
                 // Other errors - log but don't expose details
                 response.contentType = "application/json"

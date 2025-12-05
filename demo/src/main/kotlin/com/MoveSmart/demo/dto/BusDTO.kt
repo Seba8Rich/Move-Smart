@@ -1,6 +1,7 @@
 package com.movesmart.demo.dto
 
 import com.movesmart.demo.model.Bus
+import kotlin.Long
 
 data class BusDTORequest(
     val plateNumber: String,
@@ -23,6 +24,7 @@ data class BusDTOResponse(
                 route = bus.route,
                 organizationName = bus.organization.name
             )
+
         }
     }
 }
