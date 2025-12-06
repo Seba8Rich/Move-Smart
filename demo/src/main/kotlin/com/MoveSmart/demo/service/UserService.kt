@@ -3,6 +3,7 @@ package com.movesmart.demo.service
 
 import com.movesmart.demo.model.User
 import com.movesmart.demo.model.UserRole
+import com.movesmart.demo.repository.BusRepository
 import com.movesmart.demo.repository.UserRepository
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
@@ -12,7 +13,8 @@ import org.springframework.transaction.annotation.Transactional
 @Transactional
 class UserService(
     private val userRepository: UserRepository,
-    private val passwordEncoder: PasswordEncoder
+    private val passwordEncoder: PasswordEncoder,
+    private val busRepository: BusRepository
 ) {
 
     fun createUser(user: User): User {
@@ -104,12 +106,20 @@ class UserService(
     }
 
     fun deleteUser(id: Long): Boolean {
-        return if (userRepository.existsById(id)) {
-            userRepository.deleteById(id)
-            true
-        } else {
-            false
+        if (!userRepository.existsById(id)) {
+            return false
         }
+        
+        // Check if user is assigned as driver to any bus
+        val busesWithDriver = busRepository.findByDriverId(id)
+        if (busesWithDriver.isNotEmpty()) {
+            // Unassign the user from all buses before deletion
+            busRepository.unassignDriverFromAllBuses(id)
+        }
+        
+        // Now safe to delete the user
+        userRepository.deleteById(id)
+        return true
     }
 
     fun findByEmailOrPhone(identifier: String): User {

@@ -28,6 +28,11 @@ data class AssignBusRequest(
     val busId: Long
 )
 
+data class ChangePasswordRequest(
+    val oldPassword: String,
+    val newPassword: String
+)
+
 @RestController
 @RequestMapping("/api/users")
 class UserController(
@@ -117,6 +122,37 @@ class UserController(
         }
     }
     
+    @PutMapping("/{id}/password")
+    fun changePassword(
+        @PathVariable id: Long,
+        @RequestBody request: ChangePasswordRequest
+    ): ResponseEntity<Any> {
+        return try {
+            // Validate input
+            if (request.oldPassword.isBlank()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(mapOf("error" to "Bad Request", "message" to "oldPassword is required"))
+            }
+            if (request.newPassword.isBlank()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(mapOf("error" to "Bad Request", "message" to "newPassword is required"))
+            }
+            if (request.newPassword.length < 6) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(mapOf("error" to "Bad Request", "message" to "newPassword must be at least 6 characters long"))
+            }
+
+            userService.changePassword(id, request.oldPassword, request.newPassword)
+            ResponseEntity.ok(mapOf("message" to "Password changed successfully"))
+        } catch (ex: IllegalArgumentException) {
+            ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(mapOf("error" to "Bad Request", "message" to (ex.message ?: "Failed to change password")))
+        } catch (ex: Exception) {
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(mapOf("error" to "Internal Server Error", "message" to (ex.message ?: "An error occurred")))
+        }
+    }
+    
     @PutMapping("/{id}")
     fun updateUser(@PathVariable id: Long, @RequestBody request: UpdateUserRequest): ResponseEntity<Any> {
         return try {
@@ -151,6 +187,21 @@ class UserController(
                     .body(mapOf("message" to "User is not a driver. Only drivers can be assigned to buses."))
             }
             
+            // Check if busId = 0, which is a signal to unassign the driver
+            if (request.busId == 0L) {
+                // Unassign the driver from all buses
+                if (!busService.isDriverAssignedToBus(driverId)) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(mapOf("message" to "Driver is not assigned to any bus."))
+                }
+                
+                val updatedRows = busService.unassignDriverFromBus(driverId)
+                return ResponseEntity.ok(mapOf(
+                    "message" to "Driver unassigned from bus successfully",
+                    "busesUnassigned" to updatedRows
+                ))
+            }
+            
             // Assign the bus to the driver
             val updatedBus = busService.updateBusWithDriver(request.busId, driver)
             
@@ -162,6 +213,40 @@ class UserController(
             ResponseEntity.status(HttpStatus.BAD_REQUEST).body(mapOf("message" to (ex.message ?: "Failed to assign bus to driver")))
         } catch (ex: Exception) {
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(mapOf("message" to "An error occurred while assigning bus to driver"))
+        }
+    }
+
+    @PutMapping("/drivers/{driverId}/unassign-bus")
+    @PreAuthorize("hasRole('ADMIN')")
+    fun unassignBusFromDriver(
+        @PathVariable driverId: Long
+    ): ResponseEntity<Any> {
+        return try {
+            // Verify the user exists and is a driver
+            val driver = userService.getUserById(driverId)
+            
+            if (driver.userRole != UserRole.DRIVER) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(mapOf("message" to "User is not a driver. Only drivers can be unassigned from buses."))
+            }
+            
+            // Check if driver is assigned to any bus
+            if (!busService.isDriverAssignedToBus(driverId)) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(mapOf("message" to "Driver is not assigned to any bus."))
+            }
+            
+            // Unassign the driver from all buses
+            val updatedRows = busService.unassignDriverFromBus(driverId)
+            
+            ResponseEntity.ok(mapOf(
+                "message" to "Driver unassigned from bus successfully",
+                "busesUnassigned" to updatedRows
+            ))
+        } catch (ex: IllegalArgumentException) {
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(mapOf("message" to (ex.message ?: "Failed to unassign bus from driver")))
+        } catch (ex: Exception) {
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(mapOf("message" to "An error occurred while unassigning bus from driver"))
         }
     }
     

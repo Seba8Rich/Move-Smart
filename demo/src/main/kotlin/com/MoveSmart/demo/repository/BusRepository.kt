@@ -30,4 +30,11 @@ interface BusRepository : JpaRepository<Bus, Long> {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(value = "UPDATE bus SET driver_id = :driverId WHERE plate_number = :plateNumber", nativeQuery = true)
     fun assignDriverToBusByPlateNumber(@Param("plateNumber") plateNumber: String, @Param("driverId") driverId: Long?): Int
+    
+    @Query("SELECT b FROM Bus b WHERE b.driver.userId = :driverId")
+    fun findByDriverId(@Param("driverId") driverId: Long): List<Bus>
+    
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value = "UPDATE bus SET driver_id = NULL WHERE driver_id = :driverId", nativeQuery = true)
+    fun unassignDriverFromAllBuses(@Param("driverId") driverId: Long): Int
 }

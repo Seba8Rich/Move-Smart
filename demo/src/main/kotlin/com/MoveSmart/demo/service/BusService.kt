@@ -4,6 +4,7 @@ import com.movesmart.demo.dto.BusDTORequest
 import com.movesmart.demo.model.Bus
 import com.movesmart.demo.repository.BusRepository
 import com.movesmart.demo.repository.OrganizationRepository
+import com.movesmart.demo.repository.RouteRepository
 import jakarta.persistence.EntityManager
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -13,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional
 class BusService(
     private val busRepository: BusRepository,
     private val organizationRepository: OrganizationRepository,
+    private val routeRepository: RouteRepository,
     private val entityManager: EntityManager
 ) {
     fun createBus(busDTO: BusDTORequest): Bus {
@@ -20,14 +22,39 @@ class BusService(
         val organization = organizationRepository.findFirstByOrderByIdAsc()
             ?: throw IllegalStateException("No organization found. Please create an organization first.")
         
-        val bus = Bus(
-            plateNumber = busDTO.plateNumber,
-            capacity = busDTO.capacity,
-            route = busDTO.route,
-            organization = organization,
-            driver = null // No driver assigned initially
-        )
-        return busRepository.save(bus)
+        // If routeId is provided, assign bus to existing route
+        val routeString = if (busDTO.routeId != null) {
+            val route = routeRepository.findById(busDTO.routeId)
+                .orElseThrow { IllegalArgumentException("Route not found with ID: ${busDTO.routeId}") }
+            
+            // Create bus with route string
+            val bus = Bus(
+                plateNumber = busDTO.plateNumber,
+                capacity = busDTO.capacity,
+                route = "${route.startStation} to ${route.endStation}",
+                organization = organization,
+                driver = null // No driver assigned initially
+            )
+            
+            // Save bus first
+            val savedBus = busRepository.save(bus)
+            
+            // Add bus to route's buses collection (assign bus to route)
+            route.buses.add(savedBus)
+            routeRepository.save(route)
+            
+            return savedBus
+        } else {
+            // Create bus without route assignment
+            val bus = Bus(
+                plateNumber = busDTO.plateNumber,
+                capacity = busDTO.capacity,
+                route = "",
+                organization = organization,
+                driver = null // No driver assigned initially
+            )
+            return busRepository.save(bus)
+        }
     }
 
     fun getAllBuses(): List<Bus> {
@@ -42,14 +69,38 @@ class BusService(
         val organization = organizationRepository.findFirstByOrderByIdAsc()
             ?: throw IllegalStateException("No organization found. Please create an organization first.")
 
-        val updatedBus = existingBus.copy(
-            plateNumber = busDTO.plateNumber,
-            capacity = busDTO.capacity,
-            route = busDTO.route,
-            organization = organization
-        )
-
-        return busRepository.save(updatedBus)
+        // If routeId is provided, assign bus to existing route
+        val routeString = if (busDTO.routeId != null) {
+            val route = routeRepository.findById(busDTO.routeId)
+                .orElseThrow { IllegalArgumentException("Route not found with ID: ${busDTO.routeId}") }
+            
+            // Update bus with route string
+            val updatedBus = existingBus.copy(
+                plateNumber = busDTO.plateNumber,
+                capacity = busDTO.capacity,
+                route = "${route.startStation} to ${route.endStation}",
+                organization = organization
+            )
+            
+            val savedBus = busRepository.save(updatedBus)
+            
+            // Add bus to route's buses collection if not already assigned
+            if (!route.buses.contains(savedBus)) {
+                route.buses.add(savedBus)
+                routeRepository.save(route)
+            }
+            
+            return savedBus
+        } else {
+            // Update bus without changing route assignment
+            val updatedBus = existingBus.copy(
+                plateNumber = busDTO.plateNumber,
+                capacity = busDTO.capacity,
+                route = existingBus.route, // Keep existing route
+                organization = organization
+            )
+            return busRepository.save(updatedBus)
+        }
     }
 
     fun deleteBus(id: Long): Boolean {
@@ -110,5 +161,30 @@ class BusService(
         // Fetch the bus again using JOIN FETCH to ensure driver is loaded
         return busRepository.findByPlateNumber(plateNumber)
             ?: throw IllegalArgumentException("Bus not found with plate number: $plateNumber")
+    }
+
+    fun unassignDriverFromBus(driverId: Long): Int {
+        // Validate driverId
+        if (driverId <= 0) {
+            throw IllegalArgumentException("Invalid driver ID: $driverId")
+        }
+        
+        // Use native query to unassign driver from all buses
+        val updatedRows = busRepository.unassignDriverFromAllBuses(driverId)
+        
+        // Note: updatedRows can be 0 if driver wasn't assigned to any bus
+        // This is not an error, just means there was nothing to unassign
+        return updatedRows
+    }
+
+    fun isDriverAssignedToBus(driverId: Long): Boolean {
+        // Check if driver is assigned to any bus
+        val buses = busRepository.findByDriverId(driverId)
+        return buses.isNotEmpty()
+    }
+
+    fun getBusesByDriverId(driverId: Long): List<Bus> {
+        // Get all buses assigned to a specific driver
+        return busRepository.findByDriverId(driverId)
     }
 }

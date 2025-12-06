@@ -322,49 +322,6 @@ class AuthController(
         }
     }
 
-    data class ChangePasswordRequest(
-        val oldPassword: String,
-        val newPassword: String
-    )
-
-    @PostMapping("/change-password")
-    fun changePassword(
-        @RequestBody request: ChangePasswordRequest,
-        authentication: org.springframework.security.core.Authentication
-    ): ResponseEntity<Any> {
-        return try {
-            // Validate input
-            if (request.oldPassword.isBlank()) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(mapOf("error" to "Bad Request", "message" to "oldPassword is required"))
-            }
-            if (request.newPassword.isBlank()) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(mapOf("error" to "Bad Request", "message" to "newPassword is required"))
-            }
-            if (request.newPassword.length < 6) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(mapOf("error" to "Bad Request", "message" to "newPassword must be at least 6 characters long"))
-            }
-
-            val userEmail = authentication.name
-            val user = userService.findByEmailOrPhone(userEmail)
-
-            if (user.userId == null) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(mapOf("error" to "Bad Request", "message" to "User ID is missing"))
-            }
-
-            userService.changePassword(user.userId!!, request.oldPassword, request.newPassword)
-            ResponseEntity.ok(mapOf("message" to "Password changed successfully"))
-        } catch (ex: IllegalArgumentException) {
-            ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(mapOf("error" to "Bad Request", "message" to (ex.message ?: "Failed to change password")))
-        } catch (ex: Exception) {
-            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(mapOf("error" to "Internal Server Error", "message" to (ex.message ?: "An error occurred")))
-        }
-    }
 
     @PostMapping("/logout")
     fun logout(authentication: org.springframework.security.core.Authentication?): ResponseEntity<Any> {

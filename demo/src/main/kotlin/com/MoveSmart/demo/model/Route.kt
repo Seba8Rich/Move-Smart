@@ -11,6 +11,9 @@ data class Route(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,
 
+    @Column(name = "route_id", nullable = true, unique = true)
+    val routeId: Long? = null, // User-defined display ID (optional)
+
     @Column(nullable = false)
     val startStation: String = "",
 
@@ -19,8 +22,12 @@ data class Route(
 
     val distanceKm: Double = 0.0,
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "bus_id", nullable = false)
-    @JsonIgnoreProperties(value = ["organization", "hibernateLazyInitializer", "handler"])
-    val bus: Bus? = null
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "route_bus",
+        joinColumns = [JoinColumn(name = "route_id", referencedColumnName = "id")],
+        inverseJoinColumns = [JoinColumn(name = "bus_id")]
+    )
+    @JsonIgnoreProperties(value = ["organization", "hibernateLazyInitializer", "handler", "routes"])
+    val buses: MutableSet<Bus> = mutableSetOf()
 )
