@@ -39,7 +39,7 @@ class RouteController(
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PASSENGER')")
     fun getAllRoutes(): ResponseEntity<List<RouteDTOResponse>> {
         val routes = routeService.getAllRoutes()
         val routeDTOs = routes.map { route ->
@@ -55,7 +55,7 @@ class RouteController(
     }
     
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PASSENGER')")
     fun getRouteById(@PathVariable id: Long): ResponseEntity<RouteDTOResponse> {
         val route = routeService.getRouteById(id)
         val response = RouteDTOResponse(

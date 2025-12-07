@@ -1,5 +1,9 @@
 package com.movesmart.demo.controller
 
+import com.movesmart.demo.dto.AssignedBusInfo
+import com.movesmart.demo.dto.DriverInfo
+import com.movesmart.demo.dto.DriverProfileResponse
+import com.movesmart.demo.dto.RouteInfo
 import com.movesmart.demo.model.User
 import com.movesmart.demo.model.UserRole
 import com.movesmart.demo.service.BusService
@@ -41,6 +45,7 @@ class UserController(
 ) {
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     fun createUser(@RequestBody user: User): ResponseEntity<Any> {
         return try {
             val createdUser = userService.createUser(user)
@@ -53,24 +58,28 @@ class UserController(
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     fun getAllUsers(): ResponseEntity<List<User>> {
         val users = userService.getAllUsers()
         return ResponseEntity.ok(users)
     }
 
     @GetMapping("/drivers")
+    @PreAuthorize("hasRole('ADMIN')")
     fun getDrivers(): ResponseEntity<List<User>> {
         val drivers = userService.getUsersByRole(UserRole.DRIVER)
         return ResponseEntity.ok(drivers)
     }
 
     @GetMapping("/passengers")
+    @PreAuthorize("hasRole('ADMIN')")
     fun getPassengers(): ResponseEntity<List<User>> {
         val passengers = userService.getUsersByRole(UserRole.PASSENGER)
         return ResponseEntity.ok(passengers)
     }
 
     @GetMapping("/admin")
+    @PreAuthorize("hasRole('ADMIN')")
     fun getAdmins(): ResponseEntity<List<User>> {
         val admins = userService.getUsersByRole(UserRole.ADMIN)
         return ResponseEntity.ok(admins)
@@ -81,6 +90,67 @@ class UserController(
         return try {
             val username = authentication.name
             val user = userService.findByEmailOrPhone(username)
+            
+            // If user is a driver, return driver profile with bus info
+            if (user.userRole == UserRole.DRIVER) {
+                val buses = busService.getBusesByDriverId(user.userId ?: throw IllegalArgumentException("Driver ID not found"))
+                val assignedBus = if (buses.isNotEmpty()) {
+                    val bus = buses.first()
+                    val (busWithDetails, route) = busService.getBusWithRouteInfo(bus.id)
+                    
+                    // If route entity exists, use it; otherwise parse route string
+                    val routeInfo = route?.let {
+                        RouteInfo(
+                            id = it.id,
+                            routeId = it.routeId,
+                            routeName = "${it.startStation} - ${it.endStation}",
+                            startStation = it.startStation,
+                            endStation = it.endStation,
+                            distanceKm = it.distanceKm
+                        )
+                    } ?: if (busWithDetails.route.isNotBlank()) {
+                        // Parse route string (format: "StartStation to EndStation")
+                        val routeParts = busWithDetails.route.split(" to ", limit = 2)
+                        if (routeParts.size == 2) {
+                            RouteInfo(
+                                id = 0,
+                                routeId = null,
+                                routeName = busWithDetails.route,
+                                startStation = routeParts[0].trim(),
+                                endStation = routeParts[1].trim(),
+                                distanceKm = 0.0
+                            )
+                        } else {
+                            null
+                        }
+                    } else {
+                        null
+                    }
+                    
+                    AssignedBusInfo(
+                        busId = busWithDetails.id,
+                        plateNumber = busWithDetails.plateNumber,
+                        capacity = busWithDetails.capacity,
+                        route = routeInfo
+                    )
+                } else {
+                    null
+                }
+                
+                val driverProfile = DriverProfileResponse(
+                    driver = DriverInfo(
+                        userId = user.userId ?: 0,
+                        userName = user.userName,
+                        userEmail = user.userEmail,
+                        userPhoneNumber = user.userPhoneNumber,
+                        userRole = user.userRole.name
+                    ),
+                    assignedBus = assignedBus
+                )
+                return ResponseEntity.ok(driverProfile)
+            }
+            
+            // For non-drivers, return regular user info
             ResponseEntity.ok(user)
         } catch (ex: IllegalArgumentException) {
             ResponseEntity.status(HttpStatus.NOT_FOUND).body(mapOf("message" to (ex.message ?: "User not found")))
@@ -90,6 +160,7 @@ class UserController(
     }
     
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     fun getUserById(@PathVariable id: Long): ResponseEntity<Any> {
         return try {
             val user = userService.getUserById(id)
@@ -102,6 +173,7 @@ class UserController(
     }
 
     @PutMapping("/me")
+    @PreAuthorize("isAuthenticated()")
     fun updateCurrentUser(
         @RequestBody request: UpdateProfileRequest,
         authentication: Authentication
@@ -154,6 +226,7 @@ class UserController(
     }
     
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     fun updateUser(@PathVariable id: Long, @RequestBody request: UpdateUserRequest): ResponseEntity<Any> {
         return try {
             val updatedUser = userService.updateUser(

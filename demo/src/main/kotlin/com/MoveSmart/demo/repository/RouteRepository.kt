@@ -24,4 +24,7 @@ interface RouteRepository : JpaRepository<Route, Long> {
     
     @Query("SELECT r FROM Route r WHERE r.routeId = :routeId")
     fun findByRouteId(@Param("routeId") routeId: Long): Route?
+    
+    @Query("SELECT r FROM Route r JOIN r.buses b WHERE b.id = :busId")
+    fun findByBusId(@Param("busId") busId: Long): List<Route>
 }

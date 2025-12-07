@@ -9,8 +9,10 @@ import com.movesmart.demo.repository.BusRepository
 import com.movesmart.demo.repository.RouteRepository
 import com.movesmart.demo.repository.UserRepository
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
+@Transactional
 class PassengerTripService(
     private val passengerTripRepository: PassengerTripRepository,
     private val busRepository: BusRepository,

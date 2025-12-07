@@ -50,16 +50,10 @@ class SecurityConfig(
             .authorizeHttpRequests {
                 it
                     // Public endpoints - no authentication required
-                    // All registration endpoints (passenger, driver, user, admin) are public
                     .requestMatchers("/api/auth/**", "/error", "/actuator/health").permitAll()
                     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                     .requestMatchers("/api/google-maps/**").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/users", "/api/users/**", "/api/passengerTrips", "/api/passengerTrips/**").permitAll()
-                    .requestMatchers(HttpMethod.POST, "/api/users", "/api/users/**", "/api/passengerTrips", "/api/passengerTrips/**").permitAll()
-                    .requestMatchers(HttpMethod.PUT, "/api/users", "/api/users/**", "/api/passengerTrips", "/api/passengerTrips/**").permitAll()
-                    // Protected endpoints - require authentication
-                    .requestMatchers("/api/dashboard/**", "/api/notifications/**").authenticated()
-                    // All other endpoints require authentication
+                    // All other endpoints require authentication (method-level security will handle role-based access)
                     .anyRequest().authenticated()
             }
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)

@@ -14,12 +14,14 @@ class PassengerTripController (
     private val passengerTripService: PassengerTripService) {
     
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     fun createTrip(@RequestBody request: PassengerTripDTORequest): ResponseEntity<PassengerTripDTOResponse> {
         val savedTrip = passengerTripService.createPassengerTrip(request)
         return ResponseEntity.status(HttpStatus.CREATED).body(PassengerTripDTOResponse.fromEntity(savedTrip))
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     fun getTrips(): ResponseEntity<List<PassengerTripDTOResponse>> {
         val trips = passengerTripService.getPassengerTrips()
         val tripDTOs = trips.map { PassengerTripDTOResponse.fromEntity(it) }
@@ -27,19 +29,21 @@ class PassengerTripController (
     }
     
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     fun getTripById(@PathVariable id: Long): ResponseEntity<PassengerTripDTOResponse> {
         val trip = passengerTripService.getPassengerTripById(id)
         return ResponseEntity.ok(PassengerTripDTOResponse.fromEntity(trip))
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     fun updateTrip(@PathVariable id: Long, @RequestBody request: PassengerTripDTORequest): ResponseEntity<PassengerTripDTOResponse> {
         val updatedTrip = passengerTripService.updatePassengerTrip(id, request)
         return ResponseEntity.ok(PassengerTripDTOResponse.fromEntity(updatedTrip))
     }
     
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    @PreAuthorize("hasRole('ADMIN')")
     fun deleteTrip(@PathVariable id: Long): ResponseEntity<String> {
         return if (passengerTripService.deletePassengerTrip(id)) {
             ResponseEntity.ok("Passenger trip deleted successfully")

@@ -23,7 +23,7 @@ class BusService(
             ?: throw IllegalStateException("No organization found. Please create an organization first.")
         
         // If routeId is provided, assign bus to existing route
-        val routeString = if (busDTO.routeId != null) {
+        if (busDTO.routeId != null) {
             val route = routeRepository.findById(busDTO.routeId)
                 .orElseThrow { IllegalArgumentException("Route not found with ID: ${busDTO.routeId}") }
             
@@ -70,7 +70,7 @@ class BusService(
             ?: throw IllegalStateException("No organization found. Please create an organization first.")
 
         // If routeId is provided, assign bus to existing route
-        val routeString = if (busDTO.routeId != null) {
+        if (busDTO.routeId != null) {
             val route = routeRepository.findById(busDTO.routeId)
                 .orElseThrow { IllegalArgumentException("Route not found with ID: ${busDTO.routeId}") }
             
@@ -186,5 +186,14 @@ class BusService(
     fun getBusesByDriverId(driverId: Long): List<Bus> {
         // Get all buses assigned to a specific driver
         return busRepository.findByDriverId(driverId)
+    }
+
+    fun getBusWithRouteInfo(busId: Long): Pair<Bus, com.movesmart.demo.model.Route?> {
+        val bus = getBusById(busId)
+        // Find the route(s) this bus is assigned to
+        val routes = routeRepository.findByBusId(busId)
+        // Return the first route (bus typically assigned to one route)
+        val route = routes.firstOrNull()
+        return Pair(bus, route)
     }
 }
