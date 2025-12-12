@@ -22,67 +22,36 @@ class PassengerLocationController(
     fun saveMyLocation(
         @RequestBody request: PassengerLocationRequest,
         authentication: Authentication
-    ): ResponseEntity<Any> {
-        return try {
-            val username = authentication.name
-            val user = userService.findByEmailOrPhone(username)
-            val userId = user.userId ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(mapOf("error" to "Bad Request", "message" to "User ID not found"))
-
-            val savedLocation = passengerLocationService.saveOrUpdatePassengerLocation(userId, request)
-            ResponseEntity.status(HttpStatus.CREATED).body(savedLocation)
-        } catch (ex: IllegalArgumentException) {
-            ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(mapOf("error" to "Bad Request", "message" to (ex.message ?: "Failed to save location")))
-        } catch (ex: Exception) {
-            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(mapOf("error" to "Internal Server Error", "message" to "An error occurred while saving location"))
-        }
+    ): ResponseEntity<PassengerLocationResponse> {
+        val userId = getCurrentUserId(authentication)
+        val savedLocation = passengerLocationService.saveOrUpdatePassengerLocation(userId, request)
+        return ResponseEntity.status(HttpStatus.CREATED).body(savedLocation)
     }
 
     @GetMapping("/me")
     @PreAuthorize("hasRole('PASSENGER')")
-    fun getMyLocation(authentication: Authentication): ResponseEntity<Any> {
-        return try {
-            val username = authentication.name
-            val user = userService.findByEmailOrPhone(username)
-            val userId = user.userId ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(mapOf("error" to "Bad Request", "message" to "User ID not found"))
-
-            val location = passengerLocationService.getLatestPassengerLocation(userId)
-            
-            if (location == null) {
-                ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(mapOf("error" to "Not Found", "message" to "No location found. Please save your location first."))
-            } else {
-                ResponseEntity.ok(location)
-            }
-        } catch (ex: IllegalArgumentException) {
-            ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(mapOf("error" to "Bad Request", "message" to (ex.message ?: "Failed to get location")))
-        } catch (ex: Exception) {
-            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(mapOf("error" to "Internal Server Error", "message" to "An error occurred while getting location"))
+    fun getMyLocation(authentication: Authentication): ResponseEntity<PassengerLocationResponse> {
+        val userId = getCurrentUserId(authentication)
+        val location = passengerLocationService.getLatestPassengerLocation(userId)
+        
+        if (location == null) {
+            throw IllegalArgumentException("No location found. Please save your location first.")
         }
+        
+        return ResponseEntity.ok(location)
     }
 
     @GetMapping("/me/history")
     @PreAuthorize("hasRole('PASSENGER')")
-    fun getMyLocationHistory(authentication: Authentication): ResponseEntity<Any> {
-        return try {
-            val username = authentication.name
-            val user = userService.findByEmailOrPhone(username)
-            val userId = user.userId ?: return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(mapOf("error" to "Bad Request", "message" to "User ID not found"))
-
-            val locations = passengerLocationService.getAllPassengerLocations(userId)
-            ResponseEntity.ok(locations)
-        } catch (ex: IllegalArgumentException) {
-            ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(mapOf("error" to "Bad Request", "message" to (ex.message ?: "Failed to get location history")))
-        } catch (ex: Exception) {
-            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(mapOf("error" to "Internal Server Error", "message" to "An error occurred while getting location history"))
-        }
+    fun getMyLocationHistory(authentication: Authentication): ResponseEntity<List<PassengerLocationResponse>> {
+        val userId = getCurrentUserId(authentication)
+        val locations = passengerLocationService.getAllPassengerLocations(userId)
+        return ResponseEntity.ok(locations)
+    }
+    
+    private fun getCurrentUserId(authentication: Authentication): Long {
+        val username = authentication.name
+        val user = userService.findByEmailOrPhone(username)
+        return user.userId ?: throw IllegalArgumentException("User ID not found")
     }
 }

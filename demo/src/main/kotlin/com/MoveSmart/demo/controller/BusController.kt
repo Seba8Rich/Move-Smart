@@ -34,40 +34,34 @@ class BusController(
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'DRIVER')")
     fun getBusById(@PathVariable id: String): ResponseEntity<Bus> {
-        val bus = try {
-            // Try to parse as Long (ID)
-            val busId = id.toLong()
+        val bus = getBusByIdOrPlateNumber(id)
+        return ResponseEntity.ok(bus)
+    }
+    
+    private fun getBusByIdOrPlateNumber(identifier: String): Bus {
+        return try {
+            val busId = identifier.toLong()
             busService.getBusById(busId)
         } catch (e: NumberFormatException) {
-            // If not a number, treat as plate number
-            busService.getBusByPlateNumber(id)
+            busService.getBusByPlateNumber(identifier)
         }
-        return ResponseEntity.ok(bus)
     }
     
     @GetMapping("/my-bus")
     @PreAuthorize("hasRole('DRIVER')")
-    fun getMyBus(authentication: Authentication): ResponseEntity<Any> {
-        return try {
-            val username = authentication.name
-            val driver = userService.findByEmailOrPhone(username)
-            
-            val buses = busService.getBusesByDriverId(driver.userId ?: throw IllegalArgumentException("Driver ID not found"))
-            
-            if (buses.isEmpty()) {
-                ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(mapOf("message" to "No bus assigned to this driver"))
-            } else {
-                // Return the first bus (driver should only have one bus assigned)
-                ResponseEntity.ok(buses.first())
-            }
-        } catch (ex: IllegalArgumentException) {
-            ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(mapOf("error" to "Bad Request", "message" to (ex.message ?: "Failed to get bus")))
-        } catch (ex: Exception) {
-            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(mapOf("error" to "Internal Server Error", "message" to (ex.message ?: "An error occurred")))
+    fun getMyBus(authentication: Authentication): ResponseEntity<Bus> {
+        val username = authentication.name
+        val driver = userService.findByEmailOrPhone(username)
+        
+        val driverId = driver.userId ?: throw IllegalArgumentException("Driver ID not found")
+        val buses = busService.getBusesByDriverId(driverId)
+        
+        if (buses.isEmpty()) {
+            throw IllegalArgumentException("No bus assigned to this driver")
         }
+        
+        // Return the first bus (driver should only have one bus assigned)
+        return ResponseEntity.ok(buses.first())
     }
     
     @PutMapping("/{id}")
@@ -79,11 +73,10 @@ class BusController(
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    fun deleteBus(@PathVariable id: Long): ResponseEntity<String> {
-        return if (busService.deleteBus(id)) {
-            ResponseEntity.ok("Bus deleted successfully")
-        } else {
-            ResponseEntity.notFound().build()
+    fun deleteBus(@PathVariable id: Long): ResponseEntity<Map<String, String>> {
+        if (busService.deleteBus(id)) {
+            return ResponseEntity.ok(mapOf("message" to "Bus deleted successfully"))
         }
+        throw IllegalArgumentException("Bus not found with ID: $id")
     }
 }

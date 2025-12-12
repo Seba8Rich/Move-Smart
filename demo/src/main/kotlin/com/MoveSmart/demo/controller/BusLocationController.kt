@@ -14,8 +14,21 @@ class BusLocationController(
 ) {
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DRIVER')")
     fun createBusLocation(@RequestBody busLocation: BusLocation): ResponseEntity<BusLocation> {
+        // Validate that bus is provided
+        if (busLocation.bus.id == 0L) {
+            throw IllegalArgumentException("Bus must be provided")
+        }
+        
+        // Validate coordinates
+        if (busLocation.latitude < -90 || busLocation.latitude > 90) {
+            throw IllegalArgumentException("Latitude must be between -90 and 90")
+        }
+        if (busLocation.longitude < -180 || busLocation.longitude > 180) {
+            throw IllegalArgumentException("Longitude must be between -180 and 180")
+        }
+        
         val createdLocation = busLocationService.createBusLocation(busLocation)
         return ResponseEntity.status(HttpStatus.CREATED).body(createdLocation)
     }

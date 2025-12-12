@@ -42,11 +42,10 @@ class OrganizationController(
     
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    fun deleteOrganization(@PathVariable id: Long): ResponseEntity<String> {
-        return if (organizationService.deleteOrganization(id)) {
-            ResponseEntity.ok("Organization deleted successfully")
-        } else {
-            ResponseEntity.notFound().build()
+    fun deleteOrganization(@PathVariable id: Long): ResponseEntity<Map<String, String>> {
+        if (organizationService.deleteOrganization(id)) {
+            return ResponseEntity.ok(mapOf("message" to "Organization deleted successfully"))
         }
+        throw IllegalArgumentException("Organization not found with ID: $id")
     }
 }
